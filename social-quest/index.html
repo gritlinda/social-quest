@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>사회 탐험대</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gothic+A1:wght@400;600;800&display=swap">
+<style>
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+</style>
+<style>
+/* Layout: 한 화면 앱. 홈(탐험 지도) → 개념 카드 → 퀴즈 → 오답 재도전 → 결과. 밝은 단일 테마 */
+:root{
+ --sky:#e9f4ff; --ink:#1d2a4a; --muted:#5d6b8a; --card:#ffffff; --line:#d7e4f5;
+ --blue:#3d7bff; --blue-d:#2556c9; --sun:#ffc531; --sun-d:#e0a500; --coral:#ff6b6b; --coral-d:#d94848;
+ --mint:#23c483; --mint-d:#169866; --grape:#8b5cf6; --grape-d:#6a3fd6;
+ --f-disp:'Jua','Gothic A1',system-ui,sans-serif; --f-body:'Gothic A1','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+ color-scheme:light;
+}
+html,body{height:100%}
+body{word-break:keep-all;overflow-wrap:anywhere;background:var(--sky);color:var(--ink);font-family:var(--f-body);font-size:16px;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:14px}
+.app{max-width:560px;margin:0 auto;min-height:100%;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3,.disp{font-family:var(--f-disp);font-weight:400;letter-spacing:.2px;text-wrap:balance;margin:0}
+/* 3D 버튼 */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px 18px;border-radius:16px;font-family:var(--f-disp);font-size:20px;color:#fff;background:var(--blue);box-shadow:0 5px 0 var(--blue-d);transition:transform .08s, box-shadow .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--blue-d)}
+.btn.sun{background:var(--sun);color:#4a3400;box-shadow:0 5px 0 var(--sun-d)}
+.btn.mint{background:var(--mint);box-shadow:0 5px 0 var(--mint-d)}
+.btn.coral{background:var(--coral);box-shadow:0 5px 0 var(--coral-d)}
+.btn.ghost{background:#fff;color:var(--ink);box-shadow:0 5px 0 var(--line);border:2px solid var(--line)}
+.btn[disabled]{background:#cfd8e6;box-shadow:0 5px 0 #b3bfd2;color:#fff;cursor:not-allowed}
+/* 상단 */
+.top{display:flex;align-items:center;gap:10px}
+.chip{display:flex;align-items:center;gap:6px;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:800;font-variant-numeric:tabular-nums}
+.chip .ic{font-size:18px}
+.spacer{flex:1}
+.icobtn{width:42px;height:42px;border-radius:12px;background:#fff;border:2px solid var(--line);font-size:20px;display:grid;place-items:center}
+/* 히어로 */
+.hero{background:linear-gradient(135deg,#3d7bff 0%,#7b5cff 100%);border-radius:24px;color:#fff;padding:18px;display:flex;gap:14px;align-items:center;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)}
+.hero .txt{flex:1;min-width:0;position:relative;z-index:1}
+.hero h1{font-size:26px;line-height:1.15}
+.hero p{margin:4px 0 10px;font-size:14px;opacity:.92}
+.lvbar{height:12px;background:rgba(255,255,255,.28);border-radius:99px;overflow:hidden}
+.lvbar i{display:block;height:100%;background:var(--sun);border-radius:99px;transition:width .5s}
+.lvtxt{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums}
+.mascot{width:86px;height:86px;flex:0 0 auto;position:relative;z-index:1}
+/* 탭 */
+.tabs{display:flex;background:#fff;border:2px solid var(--line);border-radius:16px;padding:4px;gap:4px}
+.tabs button{flex:1;padding:10px;border-radius:12px;font-weight:800;color:var(--muted)}
+.tabs button.on{background:var(--ink);color:#fff}
+/* 지도 */
+.unit{background:#fff;border-radius:22px;border:2px solid var(--line);padding:16px 14px 20px}
+.unit-h{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.unit-h .tag{font-family:var(--f-disp);font-size:13px;color:#fff;padding:3px 10px;border-radius:99px}
+.unit-h h2{font-size:21px}
+.unit-h .cnt{margin-left:auto;font-weight:800;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.path{display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:6px}
+.node{display:flex;flex-direction:column;align-items:center;gap:4px;width:200px;position:relative}
+.node .bub{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;font-size:34px;background:var(--c);box-shadow:0 6px 0 var(--cd), inset 0 -6px 0 rgba(0,0,0,.08);transition:transform .1s}
+.node:active .bub{transform:translateY(4px);box-shadow:0 2px 0 var(--cd)}
+.node.lock .bub{background:#dfe6f1;box-shadow:0 6px 0 #c3cede;filter:grayscale(1);opacity:.7}
+.node.cur .bub{animation:bob 1.6s ease-in-out infinite}
+.node .nm{font-weight:800;font-size:14px;text-align:center;line-height:1.3}
+.node.lock .nm{color:#9aa6bd}
+.node .stars{font-size:15px;letter-spacing:1px;min-height:18px}
+.node .start{position:absolute;top:-14px;z-index:2;background:var(--ink);color:#fff;font-size:12px;font-weight:800;padding:3px 9px;border-radius:9px;white-space:nowrap}
+.node:nth-child(4n+2){transform:translateX(52px)}.node:nth-child(4n+4){transform:translateX(-52px)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+/* 학습 화면 */
+.bar{display:flex;align-items:center;gap:12px}
+.prog{flex:1;height:16px;background:#d9e4f3;border-radius:99px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--mint);border-radius:99px;transition:width .35s;box-shadow:inset 0 -4px 0 rgba(0,0,0,.1)}
+.x{font-size:26px;color:var(--muted);width:36px;height:36px}
+.stage{display:inline-flex;align-self:flex-start;gap:6px;align-items:center;font-family:var(--f-disp);font-size:15px;color:#fff;padding:5px 12px;border-radius:99px}
+.panel{background:#fff;border:2px solid var(--line);border-radius:22px;padding:20px}
+.qtitle{font-size:23px;line-height:1.35}
+.concept h3{font-size:22px;margin-bottom:12px;color:var(--blue-d)}
+.concept ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.concept li{line-height:1.95;font-size:16.5px;padding-left:26px;position:relative}
+.concept li::before{content:"";position:absolute;left:4px;top:11px;width:10px;height:10px;border-radius:3px;background:var(--sun);transform:rotate(45deg)}
+.blank{display:inline-block;min-width:76px;padding:0 10px;margin:0 2px;border-radius:9px;background:var(--grape);color:transparent;font-weight:800;line-height:1.55;box-shadow:0 3px 0 var(--grape-d);vertical-align:1px;user-select:none;position:relative}
+.blank::after{content:"?";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-family:var(--f-disp);font-size:15px}
+.blank.open{background:#fff3c7;color:#7a4b00;box-shadow:0 3px 0 #f1d27a;animation:pop .3s}
+.blank.open::after{content:none}
+@keyframes pop{0%{transform:scale(.7)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+.hint{font-size:13.5px;color:var(--muted);font-weight:600;text-align:center}
+.dots{display:flex;justify-content:center;gap:6px}
+.dots i{width:9px;height:9px;border-radius:50%;background:#cbd7ea}.dots i.on{background:var(--blue);width:22px;border-radius:9px}
+/* 문제 */
+.opts{display:flex;flex-direction:column;gap:11px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;padding:14px 14px;border-radius:16px;background:#fff;border:2px solid var(--line);box-shadow:0 4px 0 var(--line);font-size:17px;font-weight:600;line-height:1.4}
+.opt .k{flex:0 0 auto;width:32px;height:32px;border-radius:10px;border:2px solid var(--line);display:grid;place-items:center;font-family:var(--f-disp);font-size:16px;color:var(--muted)}
+.opt.sel{border-color:var(--blue);box-shadow:0 4px 0 var(--blue);background:#eef4ff}
+.opt.sel .k{border-color:var(--blue);color:var(--blue)}
+.opt.good{border-color:var(--mint);box-shadow:0 4px 0 var(--mint-d);background:#e6fbf2}
+.opt.bad{border-color:var(--coral);box-shadow:0 4px 0 var(--coral-d);background:#fff0f0;animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.ox{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ox .opt{justify-content:center;flex-direction:column;padding:22px 10px;font-family:var(--f-disp);font-size:54px;line-height:1}
+.ox .opt small{font-size:15px;font-family:var(--f-body);font-weight:800;color:var(--muted)}
+.ox .o{color:var(--blue)}.ox .xx{color:var(--coral)}
+.qtag{display:flex;gap:8px;align-items:center;font-weight:800;color:var(--muted);font-size:14px}
+.qtag .b{background:var(--ink);color:#fff;padding:3px 9px;border-radius:8px}
+.combo{margin-left:auto;color:var(--coral-d);font-family:var(--f-disp);font-size:17px}
+/* 피드백 시트 */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));animation:up .25s ease-out}
+.sheet .in{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.sheet.good{background:#d7f8e8}.sheet.bad{background:#ffe1e1}
+.sheet h3{font-size:21px}.sheet.good h3{color:var(--mint-d)}.sheet.bad h3{color:var(--coral-d)}
+.sheet p{margin:0;font-weight:600;line-height:1.55;font-size:15.5px}
+.sheet .ans{font-weight:800}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.padbot{height:170px}
+/* 결과 */
+.result{text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.bigstars{font-size:52px;letter-spacing:6px}
+.bigstars span{display:inline-block;animation:pop .5s backwards}
+.bigstars .off{filter:grayscale(1);opacity:.3}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.stat{background:#fff;border:2px solid var(--line);border-radius:16px;padding:12px 6px}
+.stat b{display:block;font-family:var(--f-disp);font-size:28px;font-weight:400;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;font-weight:800;color:var(--muted)}
+.retry-note{background:#fff4d6;border:2px dashed var(--sun-d);border-radius:16px;padding:14px;font-weight:700;line-height:1.5;color:#6b4a00}
+/* 오답 노트 */
+.wn{display:flex;flex-direction:column;gap:10px}
+.wn .it{background:#fff;border:2px solid var(--line);border-left:6px solid var(--coral);border-radius:14px;padding:12px 14px}
+.wn .it small{font-weight:800;color:var(--muted)}
+.wn .it p{margin:4px 0;font-weight:700;line-height:1.45}
+.wn .it .a{color:var(--mint-d);font-weight:800}
+.empty{text-align:center;color:var(--muted);font-weight:700;padding:30px 10px;line-height:1.6}
+/* 모달 */
+.modal{position:fixed;inset:0;background:rgba(20,30,60,.45);display:grid;place-items:center;z-index:30;padding:20px}
+.modal .box{background:#fff;border-radius:22px;padding:22px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:12px;text-align:center}
+.toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:#fff;font-family:var(--f-disp);font-size:18px;padding:10px 18px;border-radius:99px;z-index:40;animation:pop .3s;white-space:nowrap}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:35}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:380px){.node:nth-child(4n+2){transform:translateX(30px)}.node:nth-child(4n+4){transform:translateX(-30px)}.qtitle{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<canvas class="confetti" id="cf" hidden></canvas>
+<script>
+// [[답]] = 학습 카드에서 탭해서 여는 빈칸
+// 문제: t:'mc'(보기 a = 정답 번호), t:'ox'(a = true/false)
+const UNITS = [
+ { id:'am', name:'V. 아메리카', sub:'아메리카 대륙 탐험', chapters:[
+  { id:'c1', title:'아메리카의 국가와 주요 도시', q:'아메리카의 국가와 주요 도시의 위치는 어디일까?', icon:'🗺️',
+    cards:[
+     {h:'지역 구분 두 가지', b:['지리적으로 [[파나마 지협]]을 경계로 [[북아메리카]]와 [[남아메리카]]로 나눠요.','문화적으로 [[리오그란데강]]을 기준으로 [[앵글로아메리카]]와 [[라틴 아메리카]]로 나눠요.','지협: 두 육지를 이어 주는 좁고 잘록한 땅']},
+     {h:'주요 국가', b:['북아메리카: 캐나다, 미국, [[멕시코]], 카리브해 연안 국가들','남아메리카: 브라질, 아르헨티나, 콜롬비아, 페루, 칠레 등']},
+     {h:'캐나다·미국의 도시', b:['[[토론토]]: 캐나다의 정치·경제·문화 중심지, 인구 50% 이상이 이민자','[[몬트리올]]: 프랑스 문화가 발달, 다양한 국제 행사','[[뉴욕]]: 월가, 국제 연합(UN) 본부가 있는 세계 경제 중심','[[로스앤젤레스]]: 다양한 문화 산업','[[시카고]]: 과거 공업 발달로 성장','[[휴스턴]]: 석유 산업과 항공 우주 산업']},
+     {h:'고대 문명 도시와 생태 도시', b:['[[멕시코시티]]: 멕시코의 수도, 해발 약 2,200m, 아스테카 문명의 중심지','[[쿠스코]]: 페루, 잉카 문명의 유산','생태 도시: [[쿠리치바]](브라질), 아바나(쿠바)','[[상파울루]]: 남아메리카에서 인구가 가장 많은 금융 중심지']}
+    ],
+    quiz:[
+     {t:'mc',q:'북아메리카와 남아메리카를 나누는 지리적 경계는?',o:['리오그란데강','파나마 지협','아마존강','로키산맥'],a:1,e:'지리적으로는 파나마 지협, 문화적으로는 리오그란데강이 기준이에요.'},
+     {t:'mc',q:'앵글로아메리카와 라틴 아메리카를 나누는 문화적 기준은?',o:['미시시피강','파나마 지협','리오그란데강','안데스산맥'],a:2,e:'미국과 멕시코 국경을 흐르는 리오그란데강이 문화적 경계예요.'},
+     {t:'mc',q:'다음 중 앵글로아메리카에 속하는 나라는?',o:['멕시코','칠레','캐나다','브라질'],a:2,e:'앵글로아메리카는 미국과 캐나다예요.'},
+     {t:'mc',q:'월가를 중심으로 세계 경제 중심 역할을 하고, UN 본부가 있는 도시는?',o:['시카고','뉴욕','휴스턴','토론토'],a:1,e:'뉴욕은 미국에서 인구가 가장 많은 세계 금융 중심지예요.'},
+     {t:'mc',q:'해발 약 2,200m에 있고, 아스테카 문명의 중심지였던 멕시코의 수도는?',o:['쿠스코','멕시코시티','아바나','쿠리치바'],a:1,e:'쿠스코는 잉카 문명, 멕시코시티는 아스테카 문명이에요.'},
+     {t:'ox',q:'몬트리올은 프랑스 문화가 발달한 캐나다의 도시이다.',a:true,e:'몬트리올은 프랑스어를 쓰는 퀘벡주에 있어요.'},
+     {t:'ox',q:'휴스턴은 다양한 문화 산업으로 유명한 도시이다.',a:false,e:'문화 산업은 로스앤젤레스! 휴스턴은 석유와 항공 우주 산업이에요.'},
+     {t:'mc',q:'남아메리카에서 인구가 가장 많고 금융의 중심인 도시는?',o:['쿠스코','상파울루','아바나','몬트리올'],a:1,e:'브라질의 상파울루예요.'}
+    ]},
+  { id:'c2', title:'아메리카의 지형', q:'아메리카의 자연환경 특성은 어떠할까? ①', icon:'⛰️',
+    cards:[
+     {h:'지형의 큰 특징', b:['대륙의 [[서쪽]]에는 높고 험준한 산지가 있어요.','[[동쪽]]에는 오랜 기간 [[침식]]을 받은 낮은 산지나 고원이 있어요.']},
+     {h:'북아메리카', b:['서쪽: [[로키산맥]]이 남북으로 뻗어 있어요.','동쪽: [[애팔래치아산맥]]','가운데: 대평원과 남북으로 흐르는 [[미시시피강]]','그랜드캐니언: [[강의 침식]]으로 생긴 협곡, 세계 자연 유산']},
+     {h:'남아메리카', b:['서쪽: [[안데스산맥]]이 남북으로 뻗어 있어요.','동쪽: [[브라질 고원]]','가운데: [[아마존강]]이 흐르는 아마존 분지, 세계 최대 열대림 = 지구의 허파','[[우유니 사막]]: 고산 지대의 소금 사막, 세계적인 리튬 매장지']}
+    ],
+    quiz:[
+     {t:'ox',q:'아메리카 대륙의 서쪽은 낮은 산지나 고원이 발달했다.',a:false,e:'서쪽은 높고 험준한 산지! 낮은 산지와 고원은 동쪽이에요.'},
+     {t:'ox',q:'북아메리카에는 미시시피강이 남북으로 흐른다.',a:true,e:'대평원 가운데를 미시시피강이 흘러요.'},
+     {t:'ox',q:'북아메리카의 동쪽에는 로키산맥이 있다.',a:false,e:'로키산맥은 서쪽, 동쪽은 애팔래치아산맥이에요.'},
+     {t:'mc',q:'남아메리카 서쪽에 남북으로 뻗어 있는 산맥은?',o:['로키산맥','애팔래치아산맥','안데스산맥','알프스산맥'],a:2,e:'안데스산맥은 세계에서 가장 긴 산맥이에요.'},
+     {t:'mc',q:'세계에서 가장 큰 열대림이 있어 \'지구의 허파\'라 불리는 곳은?',o:['아마존 분지','브라질 고원','대평원','우유니 사막'],a:0,e:'아마존강이 흐르는 아마존 분지예요.'},
+     {t:'mc',q:'그랜드캐니언은 무엇으로 만들어진 협곡일까?',o:['화산 폭발','빙하','강의 침식','지진'],a:2,e:'콜로라도강이 오랜 세월 깎아 만든 협곡이에요.'},
+     {t:'mc',q:'고산 지대의 소금 사막이자 세계적인 리튬 매장지는?',o:['사하라 사막','우유니 사막','고비 사막','아타카마 사막'],a:1,e:'볼리비아의 우유니 사막이에요.'},
+     {t:'mc',q:'남아메리카 동쪽에 있는 고원은?',o:['티베트 고원','브라질 고원','멕시코 고원','데칸 고원'],a:1,e:'동쪽은 오랜 침식을 받은 브라질 고원이에요.'}
+    ]},
+  { id:'c3', title:'아메리카의 기후', q:'아메리카의 자연환경 특성은 어떠할까? ②', icon:'🌦️',
+    cards:[
+     {h:'북아메리카의 기후', b:['북부 지역: [[한대 기후]], [[냉대 기후]]','미국의 남동부: [[온대 기후]]','대륙 내부와 서부: [[건조 기후]]','멕시코 남부와 카리브해: [[열대 기후]]']},
+     {h:'남아메리카의 기후', b:['적도와 그 주변: [[열대 기후]]','남부 일부: [[온대 기후]]','적도 주변의 [[안데스 산지]]: [[고산 기후]]']},
+     {h:'고산 기후와 고산 도시', b:['해발 고도가 높아질수록 기온이 [[낮아지기]] 때문에, 열대 저지대 근처 고산 지역은 [[연중 온화한]] 기후가 나타나요.','그래서 덥고 습한 저지대보다 사람이 살기 좋아 [[고산 도시]]가 발달했어요. 예) 보고타, 키토, 쿠스코, 라파스']}
+    ],
+    quiz:[
+     {t:'ox',q:'미국의 서부 지역에서는 건조 기후가 나타난다.',a:true,e:'대륙 내부와 서부는 건조 기후예요.'},
+     {t:'ox',q:'미국의 남동부 지역에서는 온대 기후가 나타난다.',a:true,e:'남동부는 따뜻하고 비가 많은 온대 기후예요.'},
+     {t:'ox',q:'적도 주변의 안데스 산지에서는 열대 기후가 나타난다.',a:false,e:'적도 근처라도 높은 산지는 고산 기후예요.'},
+     {t:'ox',q:'북아메리카의 북부 지역은 냉대 기후와 한대 기후가 나타난다.',a:true,e:'캐나다 북부, 알래스카는 춥지요.'},
+     {t:'mc',q:'멕시코 남부와 카리브해 지역의 기후는?',o:['한대 기후','건조 기후','열대 기후','냉대 기후'],a:2,e:'적도에 가까워 일 년 내내 더운 열대 기후예요.'},
+     {t:'mc',q:'고산 기후의 특징으로 알맞은 것은?',o:['일 년 내내 매우 춥다','연중 봄처럼 온화하다','여름에 비가 전혀 없다','겨울이 아주 길다'],a:1,e:'기온의 연교차가 작고 연중 온화해요.'},
+     {t:'mc',q:'적도 부근 안데스 산지에 고산 도시가 발달한 까닭은?',o:['바다와 가까워서','저지대보다 기온이 낮아 살기 좋아서','석유가 많아서','비가 전혀 오지 않아서'],a:1,e:'열대 저지대는 덥고 습하지만 높은 곳은 서늘하고 온화해요.'},
+     {t:'mc',q:'다음 중 고산 도시가 아닌 곳은?',o:['보고타','키토','라파스','뉴욕'],a:3,e:'뉴욕은 해안의 저지대 도시예요.'}
+    ]},
+  { id:'c4', title:'아메리카의 인구 특징', q:'아메리카의 인구 특징은 무엇일까?', icon:'👥',
+    cards:[
+     {h:'앵글로아메리카', b:['유럽인이 오기 전부터 [[아메리카 원주민]]이 살았어요.','16세기 말 [[영국인]]의 식민 지배로 유럽인이 들어왔어요.','식민 지배 중 [[아프리카계 흑인]]을 노예로 데려왔어요.','오늘날 [[히스패닉]]과 아시아 등에서 이주민이 들어와요.','앵글로: 영국을 이룬 [[앵글로색슨족]]에서 유래']},
+     {h:'히스패닉이란?', b:['[[에스파냐어]]를 모국어로 쓰며 미국에 사는 라틴 아메리카 출신 사람']},
+     {h:'라틴 아메리카', b:['16세기부터 [[포르투갈인]]이 브라질을, [[에스파냐인]]이 나머지 대부분을 식민 지배했어요.','아프리카계 흑인을 노예로 데려왔어요.','여러 민족과 인종 사이에서 [[혼혈인]]이 태어났어요.','라틴: 남부 유럽의 [[라틴족]]에서 유래']}
+    ],
+    quiz:[
+     {t:'ox',q:'유럽인이 이주하기 전 앵글로아메리카에는 사람이 살지 않았다.',a:false,e:'아메리카 원주민이 살고 있었어요.'},
+     {t:'ox',q:'아프리카계 흑인은 노예 무역으로 강제 이주되었다.',a:true,e:'식민 지배 과정에서 노동력을 위해 강제로 데려왔어요.'},
+     {t:'ox',q:'브라질은 과거 에스파냐의 식민 지배를 받았다.',a:false,e:'브라질은 포르투갈! 그래서 지금도 포르투갈어를 써요.'},
+     {t:'mc',q:'에스파냐어를 모국어로 쓰며 미국에 사는 라틴 아메리카 출신 사람은?',o:['앵글로색슨','히스패닉','메스티소','이누이트'],a:1,e:'히스패닉은 미국에서 빠르게 늘고 있어요.'},
+     {t:'mc',q:'16세기 말 앵글로아메리카를 식민 지배한 나라는?',o:['영국','에스파냐','포르투갈','네덜란드'],a:0,e:'그래서 영어를 쓰고 \'앵글로\'아메리카라고 해요.'},
+     {t:'mc',q:'라틴 아메리카에서 여러 민족·인종 사이에 태어난 사람들을 무엇이라 할까?',o:['원주민','이민자','혼혈인','히스패닉'],a:2,e:'원주민·유럽계·아프리카계 사이에서 혼혈인이 태어났어요.'},
+     {t:'mc',q:'\'라틴\'이라는 이름은 어디에서 왔을까?',o:['영국의 앵글로색슨족','남부 유럽의 라틴족','아프리카의 부족','아메리카 원주민'],a:1,e:'에스파냐·포르투갈 등 라틴족 국가의 지배를 받았기 때문이에요.'}
+    ]},
+  { id:'c5', title:'아메리카의 문화', q:'아메리카의 문화에는 어떤 특징이 있을까?', icon:'🎭',
+    cards:[
+     {h:'아메리카 문화의 특징', b:['[[원주민]]의 문화와 [[유럽계]], [[아프리카계]] 문화가 섞여 새롭고 독특한 문화가 만들어졌어요.']},
+     {h:'문화 혼종성', b:['[[문화 혼종성]]: 기존 문화와 외래문화가 만나 기존 정체성이 약해지거나, 서로 섞여 새로운 문화가 만들어지는 현상']},
+     {h:'문화 혼종성의 사례', b:['[[리우 카니발]](브라질): 크리스트교 사순절 + 원주민 풍습 + 아프리카 타악기 리듬과 춤','[[재즈]], [[탱고]]: 유럽과 아프리카 문화가 아메리카에서 만남','[[과달루페 성모상]](멕시코): 유럽의 [[가톨릭]]을 받아들이며 성모상 피부색이 멕시코인처럼 어두워짐','[[햄버거]](미국): [[독일]]의 함부르크 스테이크가 미국에서 변형됨']}
+    ],
+    quiz:[
+     {t:'mc',q:'여러 문화가 섞여 새로운 문화가 만들어지는 현상은?',o:['문화 사대주의','문화 혼종성','자문화 중심주의','문화 상대주의'],a:1,e:'햄버거, 탱고, 재즈가 대표 사례예요.'},
+     {t:'mc',q:'햄버거는 어느 나라의 음식이 미국에서 변형된 것일까?',o:['프랑스','이탈리아','독일','영국'],a:2,e:'독일 함부르크 스테이크가 변형되었어요.'},
+     {t:'mc',q:'크리스트교 사순절, 원주민 풍습, 아프리카 리듬이 섞인 브라질 축제는?',o:['리우 카니발','라 토마티나','옥토버페스트','디아 데 로스 무에르토스'],a:0,e:'세계적으로 유명한 리우 카니발이에요.'},
+     {t:'mc',q:'과달루페 성모상의 피부색이 어두워진 까닭은?',o:['그림이 오래되어서','멕시코인과 비슷하게 바뀌어서','아프리카에서 만들어서','일부러 색을 칠하지 않아서'],a:1,e:'가톨릭을 받아들이며 멕시코의 모습으로 바뀌었어요.'},
+     {t:'ox',q:'재즈는 아시아의 전통 음악에 유럽의 연주 기법이 결합된 것이다.',a:false,e:'재즈는 아프리카계 음악과 유럽 음악이 만난 거예요.'},
+     {t:'ox',q:'탱고는 아프리카의 춤과 리듬이 유럽 음악과 혼합된 것이다.',a:true,e:'아르헨티나에서 탄생했어요.'},
+     {t:'ox',q:'사순절은 부활 주일 전 40일 동안 몸과 마음을 정결하게 지내는 크리스트교의 절기이다.',a:true,e:'카니발은 사순절 직전의 축제예요.'}
+    ]},
+  { id:'c6', title:'초국적 기업', q:'초국적 기업이란 무엇일까?', icon:'🏢',
+    cards:[
+     {h:'초국적 기업의 의미', b:['본사가 있는 나라를 포함해 해외 여러 나라에 자회사, 지사, 연구소, 생산 공장을 두고 [[전 세계]]를 대상으로 생산과 판매를 하는 기업']},
+     {h:'발달 배경', b:['[[교통·통신]]의 발달 → 세계 여러 지역 간 교류 활발','[[세계 무역 기구]](WTO) 등장, [[자유 무역 협정]](FTA) 확대 → 경제 활동의 세계화','WTO: 자유로운 무역과 세계 교역 증진을 위한 국제기구','FTA: 수입품 관세를 없애거나 낮춰 상품·서비스 이동을 자유롭게 하는 협정']},
+     {h:'공간적 분업', b:['[[공간적 분업]]: 효율을 높이고 이윤을 늘리려고 본사, 연구소, 공장을 서로 다른 나라·지역에 두는 것','[[본사]]: 정보와 자본을 얻기 유리한 곳','[[연구소]]: 지식·기술을 갖춘 고급 인력이 많은 곳','[[생산 공장]]: 땅값과 임금이 싸고 시장과 가까운 곳','본사에 권한이 모두 몰리지 않고, 여러 나라 [[자회사]]가 비교적 동등하게 수평적으로 연결돼요.']}
+    ],
+    quiz:[
+     {t:'ox',q:'경제 규모가 큰 미국에는 세계적인 초국적 기업이 많다.',a:true,e:'그래서 세계 경제에 큰 영향을 줘요.'},
+     {t:'ox',q:'WTO의 등장과 FTA 확대는 경제 활동의 세계화를 축소하였다.',a:false,e:'오히려 세계화를 확대했어요.'},
+     {t:'mc',q:'초국적 기업의 생산 공장이 들어서기 좋은 곳은?',o:['땅값이 비싼 곳','임금이 싸고 시장과 가까운 곳','고급 인력만 많은 곳','정보가 가장 많은 대도시 중심'],a:1,e:'생산 비용을 줄이는 곳이 유리해요.'},
+     {t:'mc',q:'초국적 기업의 본사가 주로 있는 곳은?',o:['정보와 자본을 얻기 유리한 곳','땅값이 가장 싼 곳','인구가 적은 시골','원료가 나는 곳'],a:0,e:'선진국의 대도시에 많아요.'},
+     {t:'mc',q:'연구소가 들어서기 좋은 곳은?',o:['임금이 가장 싼 곳','고급 인력이 많은 곳','항구가 있는 곳','사막 지역'],a:1,e:'연구 개발에는 지식과 기술이 필요해요.'},
+     {t:'mc',q:'본사, 연구소, 생산 공장을 서로 다른 지역에 두는 것을 무엇이라 할까?',o:['공간적 분업','지역 통합','산업 공동화','도시화'],a:0,e:'이윤을 극대화하기 위한 전략이에요.'},
+     {t:'mc',q:'초국적 기업이 늘어난 배경이 아닌 것은?',o:['교통의 발달','통신의 발달','자유 무역 협정 확대','무역 장벽 강화'],a:3,e:'무역 장벽이 낮아져서 늘었어요.'}
+    ]}
+ ]},
+ { id:'po', name:'X. 정치과정과 시민 참여', sub:'민주 시민 훈련소', chapters:[
+  { id:'c7', title:'선거의 의미와 원칙', q:'선거란 무엇일까?', icon:'🗳️',
+    cards:[
+     {h:'선거의 의미', b:['[[대의 민주주의]]에서 [[국민]]을 대신할 대표를 뽑는 과정','그래서 선거를 [[민주주의의 꽃]]이라고 해요.']},
+     {h:'선거의 기능', b:['대표자를 [[뽑는]] 기능','대표자에게 [[정당성]]을 주는 기능','대표자를 [[통제]]하고 교체하는 기능','국민이 정치에 [[참여]]하게 하는 기능']},
+     {h:'선거의 4대 원칙', b:['[[보통 선거]]: 성별, 인종, 재산, 학력과 관계없이 일정한 나이 이상 모든 국민에게 선거권','[[평등 선거]]: 모든 사람의 표의 개수와 가치가 같아야 해요.','[[직접 선거]]: 선거권을 가진 사람이 직접 투표','[[비밀 선거]]: 누구에게 투표했는지 다른 사람이 모르게 보장']}
+    ],
+    quiz:[
+     {t:'mc',q:'국민을 대신할 대표를 뽑는 선거를 무엇이라 부를까?',o:['민주주의의 학교','민주주의의 꽃','풀뿌리 민주주의','정치의 시작'],a:1,e:'\'민주주의의 학교\'는 지방 자치예요. 헷갈리지 마세요!'},
+     {t:'mc',q:'모든 사람의 표의 개수와 가치가 같아야 한다는 원칙은?',o:['보통 선거','평등 선거','직접 선거','비밀 선거'],a:1,e:'1인 1표, 표의 가치도 같아야 해요.'},
+     {t:'mc',q:'재산, 성별, 학력과 관계없이 일정 나이 이상 모든 국민에게 선거권을 주는 원칙은?',o:['보통 선거','평등 선거','직접 선거','비밀 선거'],a:0,e:'모두에게 \'보통\'으로 주는 거예요.'},
+     {t:'mc',q:'누구에게 투표했는지 남이 모르게 보장하는 원칙은?',o:['보통 선거','평등 선거','직접 선거','비밀 선거'],a:3,e:'그래서 기표소는 가려져 있어요.'},
+     {t:'mc',q:'선거권을 가진 사람이 대신 맡기지 않고 직접 투표해야 한다는 원칙은?',o:['보통 선거','평등 선거','직접 선거','비밀 선거'],a:2,e:'대리 투표는 안 돼요.'},
+     {t:'ox',q:'선거는 대표자를 뽑음으로써 국민이 정치에 참여하지 못하도록 한다.',a:false,e:'선거는 국민의 정치 참여 기능을 해요.'},
+     {t:'ox',q:'선거는 대표자에게 정당성을 부여하고, 대표자를 통제·교체하는 기능을 한다.',a:true,e:'다음 선거에서 바꿀 수 있지요.'}
+    ]},
+  { id:'c8', title:'유권자와 정당', q:'선거 과정에서 유권자와 정당은 어떤 활동을 할까?', icon:'📣',
+    cards:[
+     {h:'유권자의 활동', b:['유권자: [[선거]]할 권리를 가진 사람','선거 공보, 벽보 등으로 정당과 후보자의 [[공약]]을 비교·분석해요.','자질과 능력을 파악해 올바른 [[대표자]]를 뽑아요.','투표에 적극적으로 [[참여]]해요.','캠페인, 정책 제안으로 올바른 [[선거 문화]]를 만들어요.']},
+     {h:'정당의 의미', b:['[[정당]]: 비슷한 정치적 입장을 가진 사람들이 모여 공공의 이익을 실현하고 [[정치권력]]을 얻으려 만든 집단']},
+     {h:'정당의 활동', b:['선거에 후보자를 [[추천]]해요.','국민 의견을 반영한 정책을 [[공약]]으로 제시해요.','정책 설명회, 토론회로 정당의 [[이념]]과 정책을 알려요.','국민의 관심과 참여를 이끌어 [[정치 사회화]] 기능을 해요.']}
+    ],
+    quiz:[
+     {t:'mc',q:'선거 과정에서 유권자의 활동으로 옳지 않은 것은?',o:['선거에 후보자를 추천한다','공약을 비교·분석한다','올바른 대표자를 뽑는다','투표에 적극 참여한다'],a:0,e:'후보자 추천은 정당이 하는 일이에요.'},
+     {t:'mc',q:'정당이 국민의 의견을 반영해 만든 정책을 무엇으로 제시할까?',o:['조례','공약','판결','규칙'],a:1,e:'선거 때 약속하는 정책이 공약이에요.'},
+     {t:'mc',q:'비슷한 정치적 입장을 가진 사람들이 정치권력을 얻으려 만든 집단은?',o:['이익 집단','시민 단체','정당','언론'],a:2,e:'이익 집단·시민 단체는 정치권력을 직접 얻으려 하지 않아요.'},
+     {t:'ox',q:'유권자는 선거할 권리를 가진 사람이다.',a:true,e:'우리나라는 만 18세 이상이에요.'},
+     {t:'ox',q:'정당은 국민의 정치 관심과 참여를 이끌어 정치 사회화 기능을 한다.',a:true,e:'정당 활동을 보며 정치를 배우게 돼요.'},
+     {t:'mc',q:'정당이 정책 설명회, 토론회에서 국민에게 알리는 것은?',o:['정당의 이념과 정책','재판 결과','지방 조례','기업의 광고'],a:0,e:'그리고 지지를 호소하지요.'}
+    ]},
+  { id:'c9', title:'정치 주체의 역할', q:'정치 주체는 어떤 역할을 할까?', icon:'🏛️',
+    cards:[
+     {h:'정치 주체란?', b:['자신의 이익이나 가치에 따라 의견과 요구를 표출하고 공동체의 [[의사 결정]]에 영향을 주는 개인이나 집단','종류: 국가 기관, 정당, 이익 집단, 시민 단체, 언론, 개인']},
+     {h:'국가 기관(공식적 정치 주체)', b:['[[국회]]: 법률을 제정·개정·폐지해요.','[[정부]]: 법을 바탕으로 정책을 만들고 집행해요.','[[법원]]: 분쟁과 갈등을 재판으로 해결해요.']},
+     {h:'비공식적 정치 주체', b:['[[이익 집단]]: 같은 이해관계를 가진 사람들이 자신의 특수한 이익을 위해 만든 단체 (예: 의사 협회)','[[시민 단체]]: [[공익]]을 실현하려 시민이 자발적으로 만든 단체, 국가 기관 감시','[[언론]]: 신문, TV, 인터넷으로 정보 제공, 다른 정치 주체 감시·비판','개인: 선거, 청원, 민원, SNS 의견 표현, 서명 운동']}
+    ],
+    quiz:[
+     {t:'mc',q:'국가 기관에 대한 설명으로 옳지 않은 것은?',o:['국회, 정부, 법원이 포함된다','국회는 법률을 제정·개정한다','정부는 정책을 만들고 집행한다','비공식적으로 정책 결정에 참여한다'],a:3,e:'국가 기관은 공식적인 정치 주체예요.'},
+     {t:'mc',q:'공익을 실현하려고 시민들이 자발적으로 만든 단체는?',o:['이익 집단','시민 단체','정당','법원'],a:1,e:'공익 = 모두의 이익. 이익 집단은 자기 집단의 특수 이익이에요.'},
+     {t:'mc',q:'정보를 제공하고 다른 정치 주체의 활동을 감시·비판하는 주체는?',o:['언론','국회','이익 집단','정부'],a:0,e:'공정하고 객관적인 보도가 중요해요.'},
+     {t:'mc',q:'같은 이해관계를 가진 사람들이 자신의 특수한 이익을 위해 만든 단체는?',o:['시민 단체','이익 집단','정당','언론'],a:1,e:'예: 의사 협회, 노동조합'},
+     {t:'mc',q:'분쟁과 갈등을 재판으로 해결하는 국가 기관은?',o:['국회','정부','법원','지방 의회'],a:2,e:'국회(법 만들기), 정부(집행), 법원(재판)'},
+     {t:'ox',q:'개인도 청원, 서명 운동, SNS 의견 표현으로 정치에 참여할 수 있다.',a:true,e:'개인도 중요한 정치 주체예요.'}
+    ]},
+  { id:'c10', title:'정치과정', q:'정치과정이란 무엇일까?', icon:'🔄',
+    cards:[
+     {h:'정치과정의 의미', b:['정치 주체의 다양한 요구를 모으고 갈등을 조정해 [[민주적]]이고 [[합리적]]인 절차에 따라 정책을 결정·집행하는 과정','이를 통해 사회 [[통합]]과 발전을 이룰 수 있어요.']},
+     {h:'정치과정의 단계', b:['① 이익 [[표출]]: 개인·이익 집단·시민 단체가 요구를 드러내요.','② 이익 [[집약]]: [[정당]]과 [[언론]]이 표출된 이익을 모아요.','③ 정책 [[결정]]: [[국회]]와 정부가 정책을 결정해요.','④ 정책 [[집행]]: [[정부]]가 정책을 실행해요.','⑤ 정책 [[평가]]: 국민이 평가하고 수정을 요구해요.','⑥ [[환류]](피드백): 평가가 다시 정치과정에 반영돼요.']}
+    ],
+    quiz:[
+     {t:'mc',q:'정치과정의 순서로 알맞은 것은?',o:['표출 → 집약 → 결정 → 집행 → 평가 → 환류','집약 → 표출 → 결정 → 평가 → 집행 → 환류','표출 → 결정 → 집약 → 집행 → 환류 → 평가','결정 → 표출 → 집약 → 집행 → 평가 → 환류'],a:0,e:'드러내고, 모으고, 정하고, 하고, 따지고, 돌아가요!'},
+     {t:'mc',q:'표출된 이익을 모으는 \'이익 집약\'을 주로 하는 주체는?',o:['법원','정당과 언론','개인','외국 정부'],a:1,e:'정당과 언론이 여러 목소리를 모아 정리해요.'},
+     {t:'mc',q:'정책 평가가 다시 정치과정에 반영되는 것을 무엇이라 할까?',o:['환류(피드백)','집약','표출','집행'],a:0,e:'평가 결과가 다음 정책에 영향을 줘요.'},
+     {t:'ox',q:'국회와 정부는 결정된 정책을 집행한다.',a:false,e:'집행은 정부! 국회는 정책 결정에 참여해요.'},
+     {t:'ox',q:'정책 평가는 다시 정치과정에 반영되지 않는다.',a:false,e:'환류(피드백)로 다시 반영돼요.'},
+     {t:'ox',q:'국민은 정책을 평가하고 수정을 요구하기도 한다.',a:true,e:'그것이 정책 평가 단계예요.'},
+     {t:'ox',q:'국민은 집약된 이익을 바탕으로 정책을 수립하고 결정한다.',a:false,e:'정책 결정은 국회와 정부가 해요.'}
+    ]},
+  { id:'c11', title:'지방 자치', q:'지방 자치는 왜 중요할까?', icon:'🏘️',
+    cards:[
+     {h:'지방 자치의 의미', b:['일정한 지역의 주민이 그 지역의 일을 [[스스로]] 처리하는 것','[[지방 자치]]는 [[민주주의의 학교]], [[풀뿌리 민주주의]]라고 불려요.','주민이 [[지방 자치 단체]]를 구성해 지역 일을 자율적으로 처리해요.']},
+     {h:'지방 자치 단체의 구성', b:['[[광역]] 자치 단체: 특별시, 광역시, 도, 특별자치도, 특별자치시','[[기초]] 자치 단체: 시, 군, 구','각 단체는 지방 의회(의결 기관)와 지방 자치 단체장(집행 기관)으로 구성돼요.']},
+     {h:'지방 의회 vs 단체장', b:['[[지방 의회]](의결 기관): 지역에 맞는 [[조례]]를 제정·개정·폐지, 예산 심의·의결, 행정 사무 감사','[[지방 자치 단체장]](집행 기관): 각종 행정 사무 처리, 조례 실행에 필요한 [[규칙]] 제정, 예산 집행']}
+    ],
+    quiz:[
+     {t:'mc',q:'주민이 직접 지역 문제를 해결하며 민주주의를 배운다고 해서 지방 자치를 부르는 말은?',o:['민주주의의 꽃','민주주의의 학교','정치의 꽃','시민의 법원'],a:1,e:'\'풀뿌리 민주주의\'라고도 해요.'},
+     {t:'mc',q:'지역 실정에 맞는 조례를 제정·개정·폐지하는 곳은?',o:['지방 의회','지방 자치 단체장','법원','국회'],a:0,e:'지방 의회 = 의결 기관이에요.'},
+     {t:'mc',q:'조례를 실행하는 데 필요한 \'규칙\'을 만드는 주체는?',o:['지방 의회','지방 자치 단체장','국회','시민 단체'],a:1,e:'조례는 의회, 규칙은 단체장!'},
+     {t:'mc',q:'지방 자치 단체가 사용할 예산을 심의하고 의결하는 곳은?',o:['지방 의회','지방 자치 단체장','중앙 정부','언론'],a:0,e:'예산 심의·의결은 의회, 예산 집행은 단체장이에요.'},
+     {t:'mc',q:'지방 자치 단체장은 어떤 기관일까?',o:['의결 기관','집행 기관','사법 기관','감시 기관'],a:1,e:'시장, 군수, 구청장, 도지사가 집행 기관이에요.'},
+     {t:'mc',q:'다음 중 기초 자치 단체는?',o:['서울특별시','부산광역시','경상남도','김해시'],a:3,e:'시·군·구는 기초, 특별시·광역시·도는 광역이에요.'}
+    ]},
+  { id:'c12', title:'시민 참여', q:'지역사회의 문제를 해결하기 위해 시민은 어떻게 참여할까?', icon:'🙋',
+    cards:[
+     {h:'시민 참여 방법', b:['[[지방 선거]]: 주민을 대표할 단체장과 지방 의회 의원을 뽑아요.','[[주민 투표제]]: 지역의 중요한 일을 주민 투표로 직접 결정','[[주민 소환제]]: 단체장, 지방 의원(비례 대표 제외), 교육감을 투표로 물러나게 할 수 있어요.','[[주민 청원 제도]]: 지역 행정에 관한 요구를 문서로 직접 제출','[[주민 참여 예산 제도]]: 지방 자치 단체의 예산 편성에 주민이 직접 참여','그 밖에 집회, 서명, 공청회로 의견을 표현하고 [[여론]]을 만들어요.']},
+     {h:'시민의 태도', b:['지방 자치의 발전은 주민의 적극적인 관심과 [[참여]]에 달려 있어요.','[[시민]]은 지역 문제 해결에 관심을 갖고 자발적으로 참여해야 해요.']}
+    ],
+    quiz:[
+     {t:'mc',q:'주민을 대표할 단체장과 지방 의회 의원을 뽑는 가장 기본적인 참여 방법은?',o:['지방 선거','주민 소환제','주민 청원','공청회'],a:0,e:'가장 기본적인 시민 참여예요.'},
+     {t:'mc',q:'단체장, 지방 의원, 교육감을 투표로 물러나게 할 수 있는 제도는?',o:['주민 투표제','주민 소환제','주민 참여 예산 제도','주민 청원 제도'],a:1,e:'\'소환\' = 불러들여 물러나게 함'},
+     {t:'mc',q:'지방 자치 단체의 예산 편성 과정에 주민이 직접 참여하는 제도는?',o:['주민 참여 예산 제도','주민 소환제','지방 선거','주민 투표제'],a:0,e:'우리 동네 예산을 어디 쓸지 의견을 낼 수 있어요.'},
+     {t:'mc',q:'지역의 중요한 사항이나 정책을 주민 투표로 직접 결정하는 제도는?',o:['주민 소환제','주민 투표제','주민 청원 제도','공청회'],a:1,e:'예: 시설 유치 여부를 주민이 투표로 결정'},
+     {t:'mc',q:'지역 행정에 관한 요구 사항을 문서로 직접 제출하는 제도는?',o:['주민 청원 제도','주민 소환제','지방 선거','주민 투표제'],a:0,e:'문서로 요구하는 것이 청원이에요.'},
+     {t:'ox',q:'시민은 지역 문제 해결을 위해 자발적으로 참여하려는 자세를 지녀야 한다.',a:true,e:'적극적인 참여가 지방 자치를 키워요.'},
+     {t:'ox',q:'지방 자치 제도가 발전하려면 시민은 지역 문제에 무관심해야 한다.',a:false,e:'관심과 참여가 필요해요.'}
+    ]}
+ ]}
+];
+
+const COLORS=[['#3d7bff','#2556c9'],['#23c483','#169866'],['#ff9f1c','#d98200'],['#ff6b6b','#d94848'],['#8b5cf6','#6a3fd6'],['#14b8c4','#0e8f99']];
+const ALL=[];UNITS.forEach((u,ui)=>u.chapters.forEach((c,ci)=>{c.unit=u;c.idx=ALL.length;c.col=COLORS[ALL.length%COLORS.length];ALL.push(c)}));
+const KEY='social-quest-v1';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||null}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+let S=load()||{xp:0,stars:{},best:{},wrong:{},streakDays:0,lastDay:''};
+const $=s=>document.querySelector(s), app=$('#app');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LV=[0,60,150,280,450,660,920,1230,1600,2050,2600];
+const LVNAME=['새싹 탐험가','꼬마 탐험가','지도 읽는 탐험가','대륙 탐험가','도시 탐정','문화 연구원','기후 박사','정치 새내기','민주 시민','사회 고수','사회 마스터'];
+function lvl(){let l=0;while(l<LV.length-1&&S.xp>=LV[l+1])l++;const a=LV[l],b=LV[l+1]||a+500;return{l,name:LVNAME[l],p:Math.min(1,(S.xp-a)/(b-a)),need:b-S.xp}}
+function unlocked(i){return i===0||!!S.stars[ALL[i-1].id]}
+function today(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function touchDay(){const t=today();if(S.lastDay===t)return;const y=new Date(Date.now()-864e5);const ys=y.getFullYear()+'-'+(y.getMonth()+1)+'-'+y.getDate();S.streakDays=S.lastDay===ys?S.streakDays+1:1;S.lastDay=t;save()}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),1300)}
+const totalStars=()=>Object.values(S.stars).reduce((a,b)=>a+b,0);
+const MASCOT=`<svg class="mascot" viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="94" rx="26" ry="5" fill="rgba(0,0,0,.15)"/><path d="M22 58c0-22 12-38 28-38s28 16 28 38-12 32-28 32-28-10-28-32z" fill="#ffc531"/><path d="M30 26l6 12M70 26l-6 12" stroke="#e0a500" stroke-width="6" stroke-linecap="round"/><circle cx="39" cy="50" r="11" fill="#fff"/><circle cx="61" cy="50" r="11" fill="#fff"/><circle cx="41" cy="51" r="5" fill="#1d2a4a"/><circle cx="59" cy="51" r="5" fill="#1d2a4a"/><circle cx="43" cy="49" r="1.6" fill="#fff"/><circle cx="61" cy="49" r="1.6" fill="#fff"/><path d="M46 62l4 5 4-5z" fill="#ff6b6b"/><path d="M36 76c8 6 20 6 28 0" stroke="#e0a500" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M28 24h44l-4-10H32z" fill="#3d7bff"/><rect x="24" y="22" width="52" height="5" rx="2.5" fill="#2556c9"/></svg>`;
+let tab='map';
+/* ---------- 홈 ---------- */
+function home(){
+ const L=lvl();const done=Object.keys(S.stars).length;
+ const curI=ALL.findIndex((c,i)=>unlocked(i)&&!S.stars[c.id]);
+ let h=`<div class="top"><div class="chip"><span class="ic">🔥</span>${S.streakDays||0}일</div><div class="chip"><span class="ic">⭐</span>${totalStars()}</div><div class="chip"><span class="ic">💎</span>${S.xp}</div><div class="spacer"></div><button class="icobtn" id="rst" aria-label="처음부터 다시 하기">⚙️</button></div>
+ <div class="hero">${MASCOT}<div class="txt"><h1>사회 탐험대</h1><p>Lv.${L.l+1} ${L.name} · ${done}/${ALL.length} 단원 클리어</p><div class="lvbar"><i style="width:${L.p*100}%"></i></div><div class="lvtxt"><span>다음 레벨까지</span><span>${L.l>=LV.length-1?'MAX':L.need+' 점'}</span></div></div></div>
+ <div class="tabs"><button class="${tab==='map'?'on':''}" data-t="map">🗺️ 탐험 지도</button><button class="${tab==='note'?'on':''}" data-t="note">📒 오답 노트</button></div>`;
+ if(tab==='map'){
+  UNITS.forEach((u,ui)=>{const c=u.chapters,cl=c.filter(x=>S.stars[x.id]).length;
+   h+=`<section class="unit"><div class="unit-h"><span class="tag" style="background:${ui?'#8b5cf6':'#3d7bff'}">${ui?'정치':'지리'}</span><h2>${esc(u.sub)}</h2><span class="cnt">${cl}/${c.length}</span></div><div class="path">`;
+   c.forEach(ch=>{const i=ch.idx,lk=!unlocked(i),st=S.stars[ch.id]||0,cur=i===curI;
+    h+=`<button class="node ${lk?'lock':''} ${cur?'cur':''}" data-c="${i}" style="--c:${ch.col[0]};--cd:${ch.col[1]}" aria-label="${esc(ch.title)}${lk?' (잠김)':''}">${cur?'<span class="start">시작!</span>':''}<span class="bub">${lk?'🔒':ch.icon}</span><span class="nm">${esc(ch.title)}</span><span class="stars">${st?'⭐'.repeat(st)+'<span style="opacity:.25">'+'⭐'.repeat(3-st)+'</span>':''}</span></button>`});
+   h+=`</div></section>`});
+ }else{
+  const ids=Object.keys(S.wrong);
+  h+=`<section class="unit"><div class="unit-h"><h2>내가 틀렸던 문제</h2><span class="cnt">${ids.length}개</span></div>`;
+  if(!ids.length)h+=`<div class="empty">아직 틀린 문제가 없어요.<br>탐험을 시작해 볼까요?</div>`;
+  else{h+='<div class="wn">';ids.sort((a,b)=>S.wrong[b].n-S.wrong[a].n).forEach(id=>{const [ci,qi]=id.split(':').map(Number),ch=ALL[ci],q=ch.quiz[qi];
+   h+=`<div class="it"><small>${esc(ch.title)} · ${S.wrong[id].n}번 틀림</small><p>${esc(q.q)}</p><div class="a">정답: ${esc(q.t==='ox'?(q.a?'O':'X'):q.o[q.a])}</div><small style="font-weight:600">${esc(q.e)}</small></div>`});h+='</div>';
+   h+=`<div style="margin-top:14px"><button class="btn coral" id="wnplay">오답만 다시 풀기 (${Math.min(10,ids.length)}문제)</button></div>`}
+  h+='</section>';
+ }
+ app.innerHTML=h;
+ app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;home()});
+ app.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{const i=+b.dataset.c;if(!unlocked(i)){toast('🔒 앞 단원을 먼저 깨야 해요!');return}startChapter(i)});
+ const r=$('#rst');if(r)r.onclick=confirmReset;
+ const wp=$('#wnplay');if(wp)wp.onclick=reviewWrong;
+}
+function confirmReset(){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="box"><h3 class="disp" style="font-size:22px">처음부터 다시 할까요?</h3><p style="margin:0;color:var(--muted);font-weight:600">점수, 별, 오답 노트가 모두 지워져요.</p><button class="btn coral" id="y">네, 지울래요</button><button class="btn ghost" id="n">아니요</button></div>`;document.body.appendChild(m);m.querySelector('#n').onclick=()=>m.remove();m.querySelector('#y').onclick=()=>{S={xp:0,stars:{},best:{},wrong:{},streakDays:0,lastDay:''};save();m.remove();tab='map';home()}}
+/* ---------- 단원 ---------- */
+let R; // run state
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+function startChapter(i){touchDay();const ch=ALL[i];R={ch,i,phase:'learn',card:0,opened:new Set(),queue:ch.quiz.map((q,qi)=>({ci:i,qi})),pos:0,wrongSet:[],firstWrong:new Set(),earned:0,combo:0,maxCombo:0,round:1,review:false};learn()}
+function reviewWrong(){touchDay();const items=shuffle(Object.keys(S.wrong)).slice(0,10).map(id=>{const [ci,qi]=id.split(':').map(Number);return{ci,qi}});R={ch:null,phase:'quiz',queue:items,pos:0,wrongSet:[],firstWrong:new Set(),earned:0,combo:0,maxCombo:0,round:2,review:true,note:true};quiz()}
+function topbar(p,label,col){return `<div class="bar"><button class="x" id="quit" aria-label="나가기">✕</button><div class="prog"><i style="width:${p*100}%"></i></div><div class="chip"><span class="ic">💎</span>${S.xp}</div></div><span class="stage" style="background:${col}">${label}</span>`}
+function bindQuit(){$('#quit').onclick=()=>{const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="box"><h3 class="disp" style="font-size:22px">탐험을 멈출까요?</h3><p style="margin:0;color:var(--muted);font-weight:600">지금 단원은 처음부터 다시 해야 해요.</p><button class="btn" id="n">계속할래요</button><button class="btn ghost" id="y">나갈래요</button></div>`;document.body.appendChild(m);m.querySelector('#n').onclick=()=>m.remove();m.querySelector('#y').onclick=()=>{m.remove();home()}}}
+function learn(){
+ const ch=R.ch,c=ch.cards[R.card];let k=0,total=0;
+ const body=c.b.map(t=>'<li>'+esc(t).replace(/\[\[(.+?)\]\]/g,(m,w)=>{const id=R.card+'-'+(k++);total++;const op=R.opened.has(id);return `<button class="blank ${op?'open':''}" data-b="${id}" aria-label="${op?w:'빈칸 열기'}">${w}</button>`})+'</li>').join('');
+ const opened=[...R.opened].filter(x=>x.startsWith(R.card+'-')).length;
+ app.innerHTML=topbar((R.card+opened/Math.max(total,1))/ch.cards.length*0.35,'📖 개념 익히기 '+(R.card+1)+'/'+ch.cards.length,ch.col[0])+
+ `<h2 class="qtitle">${esc(ch.q)}</h2><div class="panel concept"><h3>${esc(c.h)}</h3><ul>${body}</ul></div>
+ <div class="hint">${opened<total?`보라색 빈칸을 눌러 정답을 열어 보세요! (${opened}/${total}) · 빈칸 하나에 +1점`:'좋아요! 모든 빈칸을 열었어요 ✨'}</div>
+ <div class="dots">${ch.cards.map((_,i)=>`<i class="${i===R.card?'on':''}"></i>`).join('')}</div>
+ <div style="display:flex;gap:10px">${R.card?'<button class="btn ghost" id="prev" style="flex:0 0 30%">이전</button>':''}<button class="btn ${R.card===ch.cards.length-1?'sun':''}" id="next" ${opened<total?'disabled':''}>${R.card===ch.cards.length-1?'문제 풀러 가기 🚀':'다음 카드'}</button></div>`;
+ bindQuit();
+ app.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{if(R.opened.has(b.dataset.b))return;R.opened.add(b.dataset.b);S.xp+=1;R.earned+=1;save();learn()});
+ $('#next').onclick=()=>{if(R.card<ch.cards.length-1){R.card++;learn()}else{R.phase='quiz';R.queue=shuffle(R.queue);quiz()}};
+ const p=$('#prev');if(p)p.onclick=()=>{R.card--;learn()};
+ window.scrollTo(0,0);
+}
+let sel=null,locked=false,curOpts=null;
+function quiz(){
+ sel=null;locked=false;
+ const it=R.queue[R.pos],ch=ALL[it.ci],q=ch.quiz[it.qi];
+ const retry=R.round>1;
+ const base=R.review?R.pos/R.queue.length:(retry?0.85+0.15*R.pos/R.queue.length:0.35+0.5*R.pos/R.queue.length);
+ const label=R.note?'📒 오답 노트 '+(R.pos+1)+'/'+R.queue.length:retry?'🔁 틀린 문제 다시 풀기 '+(R.pos+1)+'/'+R.queue.length:'✏️ 문제 '+(R.pos+1)+'/'+R.queue.length;
+ let opts='';
+ if(q.t==='ox'){curOpts=[true,false];opts=`<div class="ox"><button class="opt" data-o="0"><span class="o">O</span><small>맞아요</small></button><button class="opt" data-o="1"><span class="xx">X</span><small>틀려요</small></button></div>`}
+ else{curOpts=shuffle(q.o.map((t,i)=>({t,i})));opts=`<div class="opts">${curOpts.map((o,i)=>`<button class="opt" data-o="${i}"><span class="k">${i+1}</span><span>${esc(o.t)}</span></button>`).join('')}</div>`}
+ app.innerHTML=topbar(base,label,retry?'#ff6b6b':ch.col[0])+
+ `<div class="qtag"><span class="b">${q.t==='ox'?'OX 퀴즈':'골라 보기'}</span>${esc(ch.title)}${R.combo>=2?`<span class="combo">🔥 ${R.combo}연속!</span>`:''}</div>
+ <h2 class="qtitle">${esc(q.q)}</h2>${opts}<button class="btn" id="chk" disabled>정답 확인</button><div class="padbot"></div>`;
+ bindQuit();
+ app.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{if(locked)return;sel=+b.dataset.o;app.querySelectorAll('[data-o]').forEach(x=>x.classList.toggle('sel',x===b));$('#chk').disabled=false;if(q.t==='ox')check()});
+ $('#chk').onclick=check;
+ window.scrollTo(0,0);
+}
+function check(){
+ if(sel===null||locked)return;locked=true;
+ const it=R.queue[R.pos],ch=ALL[it.ci],q=ch.quiz[it.qi],id=it.ci+':'+it.qi;
+ const ok=q.t==='ox'?(curOpts[sel]===q.a):(curOpts[sel].i===q.a);
+ const btns=app.querySelectorAll('[data-o]');
+ btns.forEach((b,i)=>{b.classList.remove('sel');const right=q.t==='ox'?curOpts[i]===q.a:curOpts[i].i===q.a;if(right)b.classList.add('good');else if(i===sel)b.classList.add('bad')});
+ let gain=0;
+ if(ok){R.combo++;R.maxCombo=Math.max(R.maxCombo,R.combo);gain=R.round===1?10+(R.combo>=3?Math.min(10,(R.combo-2)*2):0):5;if(R.note){delete S.wrong[id]}}
+ else{R.combo=0;R.wrongSet.push(it);if(R.round===1)R.firstWrong.add(id);S.wrong[id]={n:((S.wrong[id]||{}).n||0)+1}}
+ S.xp+=gain;R.earned+=gain;save();
+ const ansTxt=q.t==='ox'?(q.a?'O':'X'):q.o[q.a];
+ const praise=['정답이에요!','완벽해요!','최고예요!','대단해요!','척척박사!'];
+ const sh=document.createElement('div');sh.className='sheet '+(ok?'good':'bad');
+ sh.innerHTML=`<div class="in"><h3>${ok?'🎉 '+praise[Math.random()*praise.length|0]+(gain?' +'+gain+'점':''):'😮 아쉬워요! 다시 풀 문제에 담았어요'}</h3><p>${ok?'':`<span class="ans">정답: ${esc(ansTxt)}</span><br>`}${esc(q.e)}</p><button class="btn ${ok?'mint':'coral'}" id="go">${R.pos<R.queue.length-1?'다음 문제':'계속하기'}</button></div>`;
+ document.body.appendChild(sh);$('#chk').hidden=true;
+ sh.querySelector('#go').focus();
+ sh.querySelector('#go').onclick=()=>{sh.remove();next()};
+}
+function next(){
+ R.pos++;
+ if(R.pos<R.queue.length){quiz();return}
+ if(R.wrongSet.length){ // 틀린 문제가 남아 있으면 다시
+  R.queue=shuffle(R.wrongSet);R.wrongSet=[];R.pos=0;R.round++;
+  app.innerHTML=`<div class="result" style="padding-top:40px">${MASCOT}<h2 class="disp" style="font-size:28px">틀린 문제를 다시 풀어 봐요!</h2><div class="retry-note">틀린 문제 ${R.queue.length}개를 모두 맞혀야<br>${R.note?'오답 노트를 마칠 수 있어요.':'다음 단원으로 넘어갈 수 있어요.'} 💪</div><button class="btn coral" id="go">다시 도전!</button></div>`;
+  $('#go').onclick=quiz;return}
+ finish();
+}
+function finish(){
+ if(R.note){app.innerHTML=`<div class="result" style="padding-top:40px">${MASCOT}<h2 class="disp" style="font-size:30px">오답 노트 정복!</h2><p style="font-weight:700;color:var(--muted)">틀렸던 문제를 모두 맞혔어요.</p><div class="stats"><div class="stat"><b>+${R.earned}</b><span>얻은 점수</span></div><div class="stat"><b>${R.maxCombo}</b><span>최고 연속</span></div><div class="stat"><b>${Object.keys(S.wrong).length}</b><span>남은 오답</span></div></div><button class="btn" id="home">탐험 지도로</button></div>`;$('#home').onclick=()=>{tab='note';home()};confetti();return}
+ const ch=R.ch,n=ch.quiz.length,w=R.firstWrong.size,correct=n-w;
+ const st=w===0?3:w<=2?2:1;const prev=S.stars[ch.id]||0;
+ const bonus=st===3?20:st===2?10:5;S.xp+=bonus;R.earned+=bonus;
+ S.stars[ch.id]=Math.max(prev,st);save();
+ const nxt=ALL[R.i+1];
+ app.innerHTML=`<div class="result" style="padding-top:20px">${MASCOT}<h2 class="disp" style="font-size:30px">${st===3?'완벽한 탐험!':'단원 클리어!'}</h2>
+ <div class="bigstars">${[0,1,2].map(i=>`<span class="${i<st?'':'off'}" style="animation-delay:${i*.18}s">⭐</span>`).join('')}</div>
+ <p style="margin:0;font-weight:700;color:var(--muted)">${esc(ch.title)} · 처음에 ${n}문제 중 ${correct}문제 정답</p>
+ <div class="stats"><div class="stat"><b>+${R.earned}</b><span>얻은 점수</span></div><div class="stat"><b>${Math.round(correct/n*100)}</b><span>정답률 %</span></div><div class="stat"><b>${R.maxCombo}</b><span>최고 연속</span></div></div>
+ ${st<3?`<div class="retry-note">한 번에 다 맞히면 ⭐ 3개! 언제든 다시 도전할 수 있어요.</div>`:''}
+ ${nxt?`<button class="btn sun" id="nx">다음 단원: ${esc(nxt.title)} →</button>`:`<div class="retry-note" style="background:#e6fbf2;border-color:var(--mint);color:#0d5c3d">🏆 모든 단원을 클리어했어요! 오답 노트로 마무리해 봐요.</div>`}
+ <button class="btn ghost" id="home">탐험 지도로</button></div>`;
+ if(nxt)$('#nx').onclick=()=>startChapter(R.i+1);
+ $('#home').onclick=()=>{tab='map';home()};
+ confetti();
+}
+function confetti(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const c=$('#cf');c.hidden=false;const x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;const cols=['#3d7bff','#ffc531','#ff6b6b','#23c483','#8b5cf6'];const P=Array.from({length:120},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,vx:(Math.random()-.5)*3,vy:2+Math.random()*3,r:Math.random()*6.28,s:6+Math.random()*6,c:cols[Math.random()*5|0]}));let t=0;(function f(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=.1;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()});if(++t<160)requestAnimationFrame(f);else{c.hidden=true}})()}
+home();
+</script>
+</body>
+</html>
